@@ -7,22 +7,41 @@ const FILES_TO_CACHE = [
   "/db.js",
   "/style.css",
   "/manifest.webmanifest",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
 ];
 
 // install
 self.addEventListener("install", function (evt) {
-    // evt.waitUntil(
-    //   caches.open(DATA_CACHE_NAME).then((cache) => cache.add("/api/images"))
-    // );
     evt.waitUntil(
-      caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.addAll(FILES_TO_CACHE);
+      })
     );
     self.skipWaiting();
   });
+  self.addEventListener("activate", function(evt) {
+    evt.waitUntil(
+      caches.keys().then(keyList => {
+        return Promise.all(
+          keyList.map(key => {
+            if (key !== CACHE_NAME && key !== DATA_CACHE_NAME) {
+              console.log("Removing old cache data", key);
+              return caches.delete(key);
+            }
+          })
+        );
+      })
+    );
+  
+    self.clients.claim();
+  });
+  
+  
   
   // fetch
   self.addEventListener("fetch", function(evt) {
-    if (evt.request.url.includes("/api/")) {
+    if (evt.request.url.includes("/api/transaction")) {
       evt.respondWith(
         caches.open(DATA_CACHE_NAME).then(cache => {
           return fetch(evt.request)
